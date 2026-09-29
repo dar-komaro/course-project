@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "tariff.h"
+#include "tariff.hpp"
 #include <string>
 #include <string_view>
 
