@@ -3,19 +3,19 @@
 
 namespace greenhouse {
 
-	Sensor::Sensor(std::string_view type, const Tariff* tariff)
-		: m_type{ type }
+	Sensor::Sensor(std::string_view title, const Tariff* tariff)
+		: m_name{ title }
 		, m_tariff{ tariff }
 	{
 	}
 
 	Sensor::~Sensor() {
-		std::cout << "[~Sensor] Датчик \"" << m_type << "\" удален.\n";
+		std::cout << "[~Sensor] Датчик \"" << m_name << "\" удален.\n";
 	}
 
 	bool Sensor::TakeMeasurement() {
 		if (m_battery <= 0) {
-			std::cout << "[Ошибка " << m_type << "] Батарея разряжена (0%)!\n";
+			std::cout << "[Ошибка " << m_name << "] Батарея разряжена (0%)!\n";
 			return false;
 		}
 
@@ -25,7 +25,7 @@ namespace greenhouse {
 			m_battery = 0;
 		}
 
-		std::cout << "Замер выполнен (" << m_type << "). Остаток заряда: " << m_battery << "%\n";
+		std::cout << "Замер выполнен (" << m_name << "). Остаток заряда: " << m_battery << "%\n";
 
 		if (m_tariff != nullptr) {
 			double cost = m_tariff->CalculateCost(1);
@@ -41,12 +41,12 @@ namespace greenhouse {
 	//перезарядить батарею
 	void Sensor::Recharge() {
 		m_battery = 100;
-		std::cout << "[Sensor] Датчик \"" << m_type << "\" заряжен до 100%.\n";
+		std::cout << "[Sensor] Датчик \"" << m_name << "\" заряжен до 100%.\n";
 	}
 
 	//информация о датчике
 	void Sensor::PrintInfo() const {
-		std::cout << "Датчик: " << m_type << " | Заряд: " << m_battery << "%";
+		std::cout << "Датчик: " << m_name << " | Заряд: " << m_battery << "%";
 		if (m_tariff != nullptr) {
 			std::cout << " | Тариф: " << m_tariff->GetName();
 		}
