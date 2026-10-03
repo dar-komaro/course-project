@@ -12,7 +12,9 @@ namespace greenhouse {
 			greenhouse::Sensor("D4", tariff)
 		}
 
-	{ }
+	{
+		std::cout << "[+Greenhouse] Теплица \"" << m_title << "\" создана.\n";
+	}
 
 	Greenhouse::~Greenhouse() {
 		std::cout << "[~Greenhouse] Теплица \"" << m_title << "\" удалена.\n";

@@ -5,7 +5,9 @@ namespace greenhouse {
 	Tariff::Tariff(std::string_view name, double price)
 		: m_name{name}
 		, m_priceUnit{price <0.0 ? 0.0 :price}
-	{ }
+	{
+		std::cout << "[+Tariff] Тариф \"" << m_name << "\" создан (Цена: " << m_priceUnit << " руб).\n";
+	}
 	Tariff::~Tariff() { std::cout << "[~Tariff] Тариф \"" << m_name << "\" удален.\n"; }
 
 	double Tariff::CalculateCost(int count) const {

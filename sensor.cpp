@@ -7,6 +7,7 @@ namespace greenhouse {
 		: m_name{ title }
 		, m_tariff{ tariff }
 	{
+		std::cout << "[+Sensor] Датчик \"" << m_name << "\" создан.\n";
 	}
 
 	Sensor::~Sensor() {
