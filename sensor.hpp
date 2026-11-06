@@ -35,6 +35,8 @@ namespace greenhouse {
 		int m_battery{ 100 };
 		BaseSensor(const BaseSensor& other) = default;
 		BaseSensor& operator=(const BaseSensor& other) = default;
+		BaseSensor(BaseSensor&& other) noexcept = default;
+		BaseSensor& operator=(BaseSensor&& other) noexcept = default;
 		[[nodiscard]] std::string FormatBaseInfo() const {
 			return "Датчик: " + m_name + " | Заряд: " + std::to_string(m_battery) + "%";
 		}
