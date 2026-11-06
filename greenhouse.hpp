@@ -5,6 +5,7 @@
 #include <string>
 #include <string_view>
 #include <array>
+#include <memory> 
 
 namespace greenhouse {
 
@@ -16,7 +17,7 @@ namespace greenhouse {
 
 	public:
 		Greenhouse() = default;
-		Greenhouse(std::string_view title, greenhouse::Tariff *tariff);
+		Greenhouse(std::string_view title, std::weak_ptr<Tariff> tariff);
 		~Greenhouse();
 
 		void FullInspection();

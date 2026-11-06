@@ -3,17 +3,18 @@
 #include "tariff.hpp"
 #include <string>
 #include <string_view>
+#include <memory> 
 
 namespace greenhouse {
 	class Sensor {
 	private:
 		std::string m_name{ "Универсальный" };
 		int m_battery{ 100 };
-		const Tariff* m_tariff{ nullptr };
+		std::weak_ptr<Tariff> m_tariff;
 
 	public:
 		Sensor() = default;
-		Sensor(std::string_view title, const Tariff* tariff);
+		Sensor(std::string_view title, std::weak_ptr<Tariff> tariff);
 		~Sensor();
 		bool TakeMeasurement();
 		void Recharge();

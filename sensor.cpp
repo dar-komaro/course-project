@@ -3,7 +3,7 @@
 
 namespace greenhouse {
 
-	Sensor::Sensor(std::string_view title, const Tariff* tariff)
+	Sensor::Sensor(std::string_view title, std::weak_ptr<Tariff> tariff)
 		: m_name{ title }
 		, m_tariff{ tariff }
 	{
@@ -28,12 +28,12 @@ namespace greenhouse {
 
 		std::cout << "Замер выполнен (" << m_name << "). Остаток заряда: " << m_battery << "%\n";
 
-		if (m_tariff != nullptr) {
-			double cost = m_tariff->CalculateCost(1);
-			std::cout << "Стоимость замера по тарифу \"" << m_tariff->GetName() << "\": " << cost << " руб.\n";
+		if (auto t = m_tariff.lock()) {
+			double cost = t->CalculateCost(1);
+			std::cout << "Стоимость замера по тарифу \"" << t->GetName() << "\": " << cost << " руб.\n";
 		}
 		else {
-			std::cout << "Тариф не привязан.\n";
+			std::cout << "Тариф уничтожен.\n";
 		}
 
 		return true;
@@ -48,13 +48,12 @@ namespace greenhouse {
 	//информация о датчике
 	void Sensor::PrintInfo() const {
 		std::cout << "Датчик: " << m_name << " | Заряд: " << m_battery << "%";
-		if (m_tariff != nullptr) {
-			std::cout << " | Тариф: " << m_tariff->GetName();
+		if (auto t = m_tariff.lock()) {
+			std::cout << " | Тариф: " << t->GetName();
 		}
 		else {
-			std::cout << " | Тариф: [не назначен]";
+			std::cout << " | Тариф: [уничтожен]";
 		}
 		std::cout << "\n";
 	}
-
 }

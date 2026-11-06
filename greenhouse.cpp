@@ -3,7 +3,7 @@
 
 namespace greenhouse {
 
-	Greenhouse::Greenhouse(std::string_view title, greenhouse::Tariff* tariff)
+	Greenhouse::Greenhouse(std::string_view title, std::weak_ptr<Tariff> tariff)
 		: m_title{ title }
 		, m_sensors{
 			greenhouse::Sensor("D1", tariff),
