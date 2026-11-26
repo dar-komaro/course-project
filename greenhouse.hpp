@@ -19,7 +19,7 @@ namespace greenhouse {
 	public:
 		Greenhouse() = default;
 		Greenhouse(std::string_view title, std::weak_ptr<Tariff> tariff);
-		~Greenhouse();
+		~Greenhouse() noexcept;
 
 		void FullInspection();
 		void PrintStatus() const;

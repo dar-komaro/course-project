@@ -16,7 +16,7 @@ namespace greenhouse {
 		std::cout << "[+Greenhouse] Теплица \"" << m_title << "\" создана.\n";
 	}
 
-	Greenhouse::~Greenhouse() {
+	Greenhouse::~Greenhouse() noexcept {
 		std::cout << "[~Greenhouse] Теплица \"" << m_title << "\" удалена.\n";
 	}
 

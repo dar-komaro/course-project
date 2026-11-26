@@ -23,6 +23,15 @@
                 << "\" | Инвентарный номер: #" << m_inventoryNumber << "\n";
         }
 
+        BaseSensor::BaseSensor(const BaseSensor& other)
+            : m_inventoryNumber(NextInventoryNumber())
+            , m_name(other.m_name)
+            , m_tariff(other.m_tariff)
+            , m_battery(other.m_battery)
+            , m_strategy(std::make_unique<StandardMode>())
+        {
+        }
+
         BaseSensor::~BaseSensor() {
             std::cout << "[~BaseSensor] Датчик: \"" << m_name
                 << "\" | Инвентарный номер: #" << m_inventoryNumber << "\n";
@@ -69,19 +78,20 @@
             std::cout << "[+TemperatureSensor] Инициализирован температурный датчик \"" << title << "\"\n";
         }
 
-        TemperatureSensor::~TemperatureSensor() {
+        TemperatureSensor::~TemperatureSensor() noexcept {
             std::cout << "[~TemperatureSensor] Уничтожен температурный датчик\n";
         }
 
         bool TemperatureSensor::TakeMeasurement() {
-            if (m_battery <= 0) {
-                std::cout << "[Ошибка] Датчик температуры #" << GetInventoryNumber() << " разряжен!\n";
-                return false;
+            int drain = GetStrategy().GetBatteryDrain();
+            if (m_battery < drain) {
+                throw LowBatteryException(GetName(), m_battery);
             }
-            m_battery -= 5;
-            m_currentTemp = m_targetTemp + (rand() % 5 - 2) * 0.5;
-            std::cout << "[Замер Темп] " << GetName() << " замерил температуру: факт = " << m_currentTemp
-                << " °C (Цель: " << m_targetTemp << " °C)\n";
+            m_battery -= drain;
+            m_currentTemp = GetStrategy().ComputeValue(m_targetTemp);
+
+            std::cout << "[Замер Темп | Режим: " << GetStrategyName() << "] " << GetName()
+                << " замерил: " << m_currentTemp << " °C (остаток заряда: " << m_battery << "%)\n";
             return true;
         }
 
@@ -109,19 +119,20 @@
             std::cout << "[+HumiditySensor] Инициализирован датчик влажности \"" << title << "\"\n";
         }
 
-        HumiditySensor::~HumiditySensor() {
+        HumiditySensor::~HumiditySensor() noexcept {
             std::cout << "[~HumiditySensor] Уничтожен датчик влажности\n";
         }
 
         bool HumiditySensor::TakeMeasurement() {
-            if (m_battery <= 0) {
-                std::cout << "[Ошибка] Датчик влажности #" << GetInventoryNumber() << " разряжен!\n";
-                return false;
+            int drain = GetStrategy().GetBatteryDrain();
+            if (m_battery < drain) {
+                throw LowBatteryException(GetName(), m_battery);
             }
-            m_battery -= 4;
-            m_currentHumidity = m_targetHumidity + (rand() % 10 - 5) * 0.8;
-            std::cout << "[Замер Влажности] " << GetName() << " замерил влажность: факт = " << m_currentHumidity
-                << "% (Цель: " << m_targetHumidity << "%)\n";
+            m_battery -= drain;
+            m_currentHumidity = GetStrategy().ComputeValue(m_targetHumidity);
+
+            std::cout << "[Замер Влажности | Режим: " << GetStrategyName() << "] " << GetName()
+                << " замерил: " << m_currentHumidity << "% (остаток заряда: " << m_battery << "%)\n";
             return true;
         }
 
@@ -149,21 +160,26 @@
             std::cout << "[+LightSensor] Инициализирован датчик освещенности \"" << title << "\"\n";
         }
 
-        LightSensor::~LightSensor() {
+        LightSensor::~LightSensor() noexcept {
             std::cout << "[~LightSensor] Уничтожен датчик освещенности\n";
         }
 
         bool LightSensor::TakeMeasurement() {
-            if (m_battery <= 0) {
-                std::cout << "[Ошибка] Датчик освещенности #" << GetInventoryNumber() << " разряжен!\n";
-                return false;
+            int drain = GetStrategy().GetBatteryDrain();
+            if (m_battery < drain) {
+                throw LowBatteryException(GetName(), m_battery);
             }
-            m_battery -= 6;
-            m_currentLight = m_targetLight + (rand() % 200 - 100);
-            std::cout << "[Замер Света] " << GetName() << " замерил свет: факт = " << m_currentLight
-                << " лк (Цель: " << m_targetLight << " лк)\n";
+            m_battery -= drain;
+
+            // Вычисляем базовое отклонение через стратегию и масштабируем его под люксы (x50)
+            double deviation = GetStrategy().ComputeValue(m_targetLight) - m_targetLight;
+            m_currentLight = m_targetLight + deviation * 50.0;
+
+            std::cout << "[Замер Света | Режим: " << GetStrategyName() << "] " << GetName()
+                << " замерил: " << m_currentLight << " лк (остаток заряда: " << m_battery << "%)\n";
             return true;
         }
+
 
         std::unique_ptr<BaseSensor> LightSensor::Clone() const {
             return std::make_unique<LightSensor>(*this);
@@ -174,6 +190,15 @@
                 + "% | Свет: " + std::to_string(m_currentLight) + " / " + std::to_string(m_targetLight) + " лк";
         }
 
+        void LightSensor::Calibrate(double offset) {
+            if (offset < -100.0 || offset > 100.0) {
+                throw InvalidCalibrationException(GetName(), offset);
+            }
+            m_currentLight += offset;
+            m_isCalibrated = true;
+            std::cout << "[Калибровка] Датчик света \"" << GetName()
+                << "\" откалиброван (поправка: " << offset << " лк).\n";
+        }
 
         // FertilizerSensor
 
@@ -189,21 +214,23 @@
             std::cout << "[+FertilizerSensor] Инициализирован датчик удобрений \"" << title << "\"\n";
         }
 
-        FertilizerSensor::~FertilizerSensor() {
+        FertilizerSensor::~FertilizerSensor() noexcept {
             std::cout << "[~FertilizerSensor] Уничтожен датчик удобрений\n";
         }
 
         bool FertilizerSensor::TakeMeasurement() {
-            if (m_battery <= 0) {
-                std::cout << "[Ошибка] Датчик удобрений #" << GetInventoryNumber() << " разряжен!\n";
-                return false;
+            int drain = GetStrategy().GetBatteryDrain();
+            if (m_battery < drain) {
+                throw LowBatteryException(GetName(), m_battery);
             }
-            m_battery -= 3;
-            m_currentFertilizer = m_targetFertilizer + (rand() % 6 - 3) * 0.5;
-            std::cout << "[Замер Удобрений] " << GetName() << " замерил уровень: факт = " << m_currentFertilizer
-                << "% (Цель: " << m_targetFertilizer << "%)\n";
+            m_battery -= drain;
+            m_currentFertilizer = GetStrategy().ComputeValue(m_targetFertilizer);
+
+            std::cout << "[Замер Удобрений | Режим: " << GetStrategyName() << "] " << GetName()
+                << " замерил: " << m_currentFertilizer << "% (остаток заряда: " << m_battery << "%)\n";
             return true;
         }
+
 
         std::unique_ptr<BaseSensor> FertilizerSensor::Clone() const {
             return std::make_unique<FertilizerSensor>(*this);
@@ -212,6 +239,16 @@
         std::string FertilizerSensor::PrintInfo() const {
             return BaseSensor::PrintInfo() + " | Удобрения: факт = " + std::to_string(m_currentFertilizer)
                 + "% (Цель: " + std::to_string(m_targetFertilizer) + "%)";
+        }
+
+        void FertilizerSensor::Calibrate(double offset) {
+            if (offset < -10.0 || offset > 10.0) {
+                throw InvalidCalibrationException(GetName(), offset);
+            }
+            m_currentFertilizer += offset;
+            m_isCalibrated = true;
+            std::cout << "[Калибровка] Датчик удобрений \"" << GetName()
+                << "\" откалиброван (поправка: " << offset << "%).\n";
         }
 
     } // namespace greenhouse

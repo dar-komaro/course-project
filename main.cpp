@@ -6,111 +6,102 @@
 #include <array>
 #include <cstdlib>
 
-int main() {
+// Функция работает с контрактом ICalibratable
+void PerformCalibration(greenhouse::ICalibratable& device, double offset) {
+    if (!device.IsCalibrated()) {
+        device.Calibrate(offset);
+    }
+}
+
+// Функция для проверки типа во время выполнения 
+void ServiceSensor(greenhouse::BaseSensor& sensor) {
+    std::cout << "Обслуживание: " << sensor.GetName() << " -> ";
+    if (auto* calibratable = dynamic_cast<greenhouse::ICalibratable*>(&sensor)) {
+        PerformCalibration(*calibratable, 1.5);
+    }
+    else {
+        std::cout << "калибровка не требуется (не поддерживается).\n";
+    }
+}
+
+int main (){
     auto sharedTariff = std::make_shared<greenhouse::Tariff>("Тариф1", 1.25);
-    std::cout << "\n";
 
-
-    std::cout << "Массив\n";
+    std::cout << "\nДемонстрация интерфейса ICalibratable и dynamic_cast\n";
     {
-        // Создаем массив датчиков разных типов, управляемый указателями на BaseSensor
-        std::array<std::unique_ptr<greenhouse::BaseSensor>, 4> arr = {
+        std::array<std::unique_ptr<greenhouse::BaseSensor>, 4> sensors = {
             std::make_unique<greenhouse::TemperatureSensor>("Датчик Температуры Т-01", sharedTariff, 23.5),
             std::make_unique<greenhouse::HumiditySensor>("Датчик Влажности В-01", sharedTariff, 60.0),
             std::make_unique<greenhouse::LightSensor>("Датчик Освещенности О-01", sharedTariff, 4500.0),
             std::make_unique<greenhouse::FertilizerSensor>("Датчик Удобрений У-01", sharedTariff, 50.0)
         };
 
-        std::cout << "\nВызов функций:\n";
-        for (const auto& sensor : arr) {
-            sensor->TakeMeasurement(); // Виртуальный метод замера
-            std::cout << "  Инфо: " << sensor->PrintInfo() << "\n\n"; // Виртуальный метод вывода
-        }
-
-        std::cout << "Выход из блока. Автоматическое удаление массива:\n";
-    }
-    std::cout << "\n";
-
-    std::cout << "Демонстрация работы со строками\n";
-    {
-        greenhouse::TemperatureSensor testSensor("Центральный Датчик Климата", sharedTariff, 22.0);
-
-        //сложение строк
-        std::string r = "Отчет системы: " + testSensor.PrintInfo();
-        std::cout << "  Сложение: " << r << "\n";
-
-        // Поиск выделение и сравнение
-        std::string_view targetKeyword = "Климата";
-        std::cout << "  Поиск подстроки '" << targetKeyword << "' в имени датчика\n";
-        if (testSensor.IsKeywordInName(targetKeyword)) {
-            std::cout << "Подстрока найдена\n";
+        for (const auto& sensor : sensors) {
+            ServiceSensor(*sensor);
         }
     }
-    std::cout << "\n";
 
-    std::cout << "Использование указателя 'this'\n";
+    std::cout << "\nДемонстрация раннего и позднего связывания\n";
     {
-        greenhouse::HumiditySensor singleSensor("Влажность-Тест", sharedTariff, 55.0);
-        singleSensor.RegisterInTariff(*sharedTariff);
-    }
-    std::cout << "\n";
+        std::unique_ptr<greenhouse::BaseSensor> ptr =
+            std::make_unique<greenhouse::TemperatureSensor>("Датчик Т-99", sharedTariff, 25.0);
 
+        // раннее связывание (метод GetDeviceCategory не виртуальный)
+        // Компилятор смотрит только на тип указателя (BaseSensor*) и привязывает BaseSensor::GetDeviceCategory()
+        std::cout << "Раннее связывание (GetDeviceCategory): " << ptr->GetDeviceCategory() << "\n";
 
-    std::cout << "Поверхностное и Глубокое копирование\n";
-    {
-        std::cout << "Поверхностное копирование\n";
-        auto originalTariff = std::make_shared<greenhouse::Tariff>("Базовый", 10.0);
-
-        auto shallowCopyTariff = originalTariff;
-
-        std::cout << "Цена оригинала: " << originalTariff->GetPriceUnit() << " руб."
-            << " | Цена копии: " << shallowCopyTariff->GetPriceUnit() << " руб.\n";
-
-        // Меняем цену в копии
-        std::cout << " Меняем цену в поверхностной копии на 99.9... *\n";
-        shallowCopyTariff->UpdatePrice(99.9);
-
-        // Проверяем
-        std::cout << "Цена оригинала: " << originalTariff->GetPriceUnit() << " руб."
-            << " | Цена копии: " << shallowCopyTariff->GetPriceUnit() << " руб.\n\n";
-
-
-        std::cout << "Глубокое копирование\n";
-        // Создаем оригинальный датчик температуры
-        greenhouse::TemperatureSensor originalSensor("T1", originalTariff, 22.0);
-        originalSensor.TakeMeasurement();
-
-        std::unique_ptr<greenhouse::BaseSensor> sens = originalSensor.Clone();
-
-        std::cout << "Оригинал: " << originalSensor.PrintInfo() << "\n";
-        std::cout << "Клон:     " << sens->PrintInfo() << "\n";
-
-        // Изменяем состояние копии
-        std::cout << " Делаем замер только на Глубоком клоне*\n";
-        sens->TakeMeasurement();
-
-        // Проверяем
-        std::cout << "Оригинал: " << originalSensor.PrintInfo() << "\n";
-        std::cout << "Клон:     " << sens->PrintInfo() << "\n";
-    }
-    std::cout << "\n";
-
-
-    {
-        // Инициализируем теплицу, которая внутри содержит массив датчиков
-        greenhouse::Greenhouse mainGreenhouse("Теплица1", sharedTariff);
-
-        std::cout << "\nМониторинг теплицы\n";
-        mainGreenhouse.PrintStatus();
-
-        std::cout << "\nОпрос датчиков\n";
-        mainGreenhouse.FullInspection();
-
-        std::cout << "\nСтатус теплицы после изменения параметров\n";
-        mainGreenhouse.PrintStatus();
-
+        // поздее связывание (метод PrintInfo виртуал)
+        // Во время работы программа смотрит в vtable реального объекта (TemperatureSensor) и вызывает TemperatureSensor::PrintInfo()
+        std::cout << "Позднее связывание (PrintInfo):        " << ptr->PrintInfo() << "\n";
     }
 
-    return 0;
+    std::cout << "\nДемонстрация конфигурирования объекта поведения\n";
+    {
+        greenhouse::TemperatureSensor smartSensor("Климат-Контроль А1", sharedTariff, 24.0);
+
+        // 1. Замер в стандартном режиме (по умолчанию расход 5%)
+        smartSensor.TakeMeasurement();
+
+        // 2. Динамически меняем объект поведения на Эко-режим (теперь расход 1%)
+        smartSensor.SetStrategy(std::make_unique<greenhouse::EcoMode>());
+        smartSensor.TakeMeasurement();
+    }
+
+    std::cout << "\nДемонстрация исключений\n";
+    {
+        greenhouse::LightSensor lightSensor("Свет-Юг", sharedTariff, 5000.0);
+
+        // Сценарий 1: Разряд батареи и восстановление (Recharge)
+        try {
+            std::cout << "Запускаем серию замеров до разряда батареи...\n";
+            for (int i = 0; i < 25; ++i) { // Заряда 100% хватит на 20 замеров (по 5%)
+                lightSensor.TakeMeasurement();
+            }
+        }
+        catch (const greenhouse::LowBatteryException& e) { // Частный тип — первым!
+            std::cout << "[Перехвачено исключение] " << e.what() << "\n";
+            std::cout << " -> Действие системы: отправляем датчик на подзарядку!\n";
+            lightSensor.Recharge();
+            lightSensor.TakeMeasurement(); // Повторный замер после зарядки успешен!
+        }
+        catch (const std::exception& e) { // Общий тип — последним!
+            std::cout << "[Общая ошибка] " << e.what() << "\n";
+        }
+
+        // Сценарий 2: Ошибка калибровки и некорректная уставка
+        try {
+            std::cout << "\nПробуем откалибровать с недопустимой поправкой 500.0...\n";
+            lightSensor.Calibrate(500.0);
+        }
+        catch (const greenhouse::InvalidCalibrationException& e) { // Частный тип
+            std::cout << "[Перехвачено InvalidCalibrationException] " << e.what() << "\n";
+        }
+        catch (const greenhouse::GreenhouseException& e) { // Базовый класс теплицы
+            std::cout << "[Перехвачено GreenhouseException] " << e.what() << "\n";
+        }
+        catch (const std::exception& e) { // Стандартный базовый класс
+            std::cout << "[Перехвачено std::exception] " << e.what() << "\n";
+        }
+    }
+
 }
-
