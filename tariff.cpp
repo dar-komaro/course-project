@@ -1,5 +1,6 @@
 ﻿#include "tariff.hpp"
 #include <iostream>
+#include "sensor.hpp" 
 
 namespace greenhouse {
 	Tariff::Tariff(std::string_view name, double price)
@@ -26,5 +27,9 @@ namespace greenhouse {
 
 	void Tariff::PrintInfo() const {
 		std::cout<< "Тариф: " << m_name << " | Цена за единицу: " << m_priceUnit << " руб.\n";
+	}
+
+	void Tariff::LogSensorRegistration(const BaseSensor& sensor) {
+		std::cout << "[Тариф] К плану успешно привязан " << sensor.GetName() << "\n";
 	}
 }

@@ -6,10 +6,10 @@ namespace greenhouse {
 	Greenhouse::Greenhouse(std::string_view title, std::weak_ptr<Tariff> tariff)
 		: m_title{ title }
 		, m_sensors{
-			greenhouse::Sensor("D1", tariff),
-			greenhouse::Sensor("D2", tariff),
-			greenhouse::Sensor("D3", tariff),
-			greenhouse::Sensor("D4", tariff)
+			std::make_unique<greenhouse::TemperatureSensor>("Датчик Температуры T1", tariff, 24.0),
+			std::make_unique<greenhouse::HumiditySensor>("Датчик Влажности H1", tariff, 65.0),
+			std::make_unique<greenhouse::LightSensor>("Датчик Освещенности L1", tariff, 5000.0),
+			std::make_unique<greenhouse::FertilizerSensor>("Датчик Удобрений F1", tariff, 60.0)
 		}
 
 	{
@@ -23,13 +23,17 @@ namespace greenhouse {
 	void Greenhouse::FullInspection() {
 		std::cout << "\n--- Запуск опроса 4-х датчиков теплицы \"" << m_title << "\" ---\n";
 		for (size_t i = 0; i < m_sensors.size(); ++i) {
-			m_sensors[i].TakeMeasurement();
+			m_sensors[i]->TakeMeasurement();
 
 		}
 	}
 
 	void Greenhouse::PrintStatus() const {
-		std::cout << "Теплица: " << m_title << " | Температура: " << m_temperature << "°C\n";
+		std::cout << "Теплица: " << m_title << "\n";
+		std::cout << "Состояние установленных приборов:\n";
+		for (const auto& sensor : m_sensors) {
+			std::cout << "  -> " << sensor->PrintInfo() << "\n";
+		}
 	}
 
 } // namespace greenhouse

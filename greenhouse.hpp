@@ -13,7 +13,8 @@ namespace greenhouse {
 	private:
 		std::string m_title{ "Теплица" };
 		double m_temperature{ 20.0 };
-		std::array<greenhouse::Sensor, 4> m_sensors;
+		std::array<std::unique_ptr<BaseSensor>, 4> m_sensors;
+
 
 	public:
 		Greenhouse() = default;
@@ -24,7 +25,7 @@ namespace greenhouse {
 		void PrintStatus() const;
 
 		// Геттер
-		greenhouse::Sensor& GetSensor(size_t index) { return m_sensors[index]; }
+		BaseSensor& GetSensor(size_t index) { return *m_sensors[index]; }
 	};
 
 } // namespace greenhouse
