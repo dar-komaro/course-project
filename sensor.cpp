@@ -32,7 +32,7 @@
         {
         }
 
-        BaseSensor::~BaseSensor() {
+        BaseSensor::~BaseSensor() noexcept {
             std::cout << "[~BaseSensor] Датчик: \"" << m_name
                 << "\" | Инвентарный номер: #" << m_inventoryNumber << "\n";
         }

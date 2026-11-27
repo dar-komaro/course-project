@@ -47,11 +47,9 @@ int main (){
             std::make_unique<greenhouse::TemperatureSensor>("Датчик Т-99", sharedTariff, 25.0);
 
         // раннее связывание (метод GetDeviceCategory не виртуальный)
-        // Компилятор смотрит только на тип указателя (BaseSensor*) и привязывает BaseSensor::GetDeviceCategory()
         std::cout << "Раннее связывание (GetDeviceCategory): " << ptr->GetDeviceCategory() << "\n";
 
         // поздее связывание (метод PrintInfo виртуал)
-        // Во время работы программа смотрит в vtable реального объекта (TemperatureSensor) и вызывает TemperatureSensor::PrintInfo()
         std::cout << "Позднее связывание (PrintInfo):        " << ptr->PrintInfo() << "\n";
     }
 
@@ -59,10 +57,10 @@ int main (){
     {
         greenhouse::TemperatureSensor smartSensor("Климат-Контроль А1", sharedTariff, 24.0);
 
-        // 1. Замер в стандартном режиме (по умолчанию расход 5%)
+        // Замер в стандартном режиме (по умолчанию расход 5%)
         smartSensor.TakeMeasurement();
 
-        // 2. Динамически меняем объект поведения на Эко-режим (теперь расход 1%)
+        // меняем объект поведения на Эко-режим (теперь расход 1%)
         smartSensor.SetStrategy(std::make_unique<greenhouse::EcoMode>());
         smartSensor.TakeMeasurement();
     }
@@ -71,35 +69,35 @@ int main (){
     {
         greenhouse::LightSensor lightSensor("Свет-Юг", sharedTariff, 5000.0);
 
-        // Сценарий 1: Разряд батареи и восстановление (Recharge)
+        // Разряд батареи и восстановление 
         try {
             std::cout << "Запускаем серию замеров до разряда батареи...\n";
-            for (int i = 0; i < 25; ++i) { // Заряда 100% хватит на 20 замеров (по 5%)
+            for (int i = 0; i < 25; ++i) { 
                 lightSensor.TakeMeasurement();
             }
         }
-        catch (const greenhouse::LowBatteryException& e) { // Частный тип — первым!
+        catch (const greenhouse::LowBatteryException& e) { 
             std::cout << "[Перехвачено исключение] " << e.what() << "\n";
             std::cout << " -> Действие системы: отправляем датчик на подзарядку!\n";
             lightSensor.Recharge();
-            lightSensor.TakeMeasurement(); // Повторный замер после зарядки успешен!
+            lightSensor.TakeMeasurement(); 
         }
-        catch (const std::exception& e) { // Общий тип — последним!
+        catch (const std::exception& e) {
             std::cout << "[Общая ошибка] " << e.what() << "\n";
         }
 
-        // Сценарий 2: Ошибка калибровки и некорректная уставка
+        //  Ошибка калибровки и некорректная уставка
         try {
             std::cout << "\nПробуем откалибровать с недопустимой поправкой 500.0...\n";
             lightSensor.Calibrate(500.0);
         }
-        catch (const greenhouse::InvalidCalibrationException& e) { // Частный тип
+        catch (const greenhouse::InvalidCalibrationException& e) { 
             std::cout << "[Перехвачено InvalidCalibrationException] " << e.what() << "\n";
         }
-        catch (const greenhouse::GreenhouseException& e) { // Базовый класс теплицы
+        catch (const greenhouse::GreenhouseException& e) {
             std::cout << "[Перехвачено GreenhouseException] " << e.what() << "\n";
         }
-        catch (const std::exception& e) { // Стандартный базовый класс
+        catch (const std::exception& e) { 
             std::cout << "[Перехвачено std::exception] " << e.what() << "\n";
         }
     }
