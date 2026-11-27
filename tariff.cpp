@@ -1,28 +1,30 @@
 ﻿#include "tariff.hpp"
 #include <iostream>
 #include "sensor.hpp" 
+#include <stdexcept>
 
 namespace greenhouse {
 	Tariff::Tariff(std::string_view name, double price)
 		: m_name{name}
 		, m_priceUnit{price <0.0 ? 0.0 :price}
 	{
+		if (price < 0.0) {
+			throw std::invalid_argument("Цена тарифа не может быть отрицательной");
+		}
 		std::cout << "[+Tariff] Тариф \"" << m_name << "\" создан (Цена: " << m_priceUnit << " руб).\n";
 	}
-	Tariff::~Tariff() { std::cout << "[~Tariff] Тариф \"" << m_name << "\" удален.\n"; }
+	Tariff::~Tariff() noexcept { std::cout << "[~Tariff] Тариф \"" << m_name << "\" удален.\n"; }
 
 	double Tariff::CalculateCost(int count) const {
 		if (count <= 0) { return 0.0; }
 		return m_priceUnit * count;
 	}
 
-	bool Tariff::UpdatePrice(double newPrice) {
+	void Tariff::UpdatePrice(double newPrice) {
 		if (newPrice < 0.0) {
-			std::cout << "[Ошибка Tariff] Отрицательная цена не допустима!\n";
-			return false;
+			throw std::invalid_argument("Отрицательная цена тарифа недопустима");
 		}
 		m_priceUnit = newPrice;
-		return true;
 	}
 
 	void Tariff::PrintInfo() const {
